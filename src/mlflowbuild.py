@@ -5,10 +5,12 @@ import pathlib
 from sklearn import datasets
 
 from sklearn import pipeline
+from sklearn.calibration import cross_val_predict
 from sklearn.metrics import accuracy_score
 from sklearn.compose import ColumnTransformer
 from sklearn.discriminant_analysis import StandardScaler
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_score
 
 
 RDIR = pathlib.Path('C:/Users/Ayush/cid')
@@ -32,13 +34,15 @@ opline = pipeline.Pipeline([("Standardization", clt),
 X = train.drop(columns=['species'])
 y = train['species']
 
+accuracy = cross_val_score(opline, X=X, y=y, scoring="accuracy", cv=5).mean()
+
 opline.fit(X, y)
 
-test = pd.read_csv(RDIR.joinpath('models/data/test.csv'))
+# test = pd.read_csv(RDIR.joinpath('models/data/test.csv'))
 
-pred = opline.predict(test.drop(columns=['species']))
+# pred = opline.predict(test.drop(columns=['species']))
 
-accuracy = accuracy_score(test['species'], pred)
+# accuracy = accuracy_score(test['species'], pred)
 
 # Set our tracking server uri for logging
 mlflow.set_tracking_uri(uri="http://127.0.0.1:8080")
@@ -67,20 +71,21 @@ with mlflow.start_run():
         sk_model=opline,
         artifact_path="iris_model",
         signature=signature,
-        input_example=X,
+        input_example=X.sample(),
         registered_model_name="tracking-quickstart",
     )
 
 
 # Load the model back for predictions as a generic Python Function model
-loaded_model = mlflow.pyfunc.load_model(model_info.model_uri)
 
-predictions = loaded_model.predict(test.drop(columns=['species']))
+# loaded_model = mlflow.pyfunc.load_model(model_info.model_uri)
 
-iris_feature_names = datasets.load_iris().feature_names
+# predictions = loaded_model.predict(test.drop(columns=['species']))
 
-result = pd.DataFrame(test.drop(columns=['species']).to_numpy(), columns=iris_feature_names)
-result["actual_class"] = test['species']
-result["predicted_class"] = predictions
+# iris_feature_names = datasets.load_iris().feature_names
 
-print(result[:4])
+# result = pd.DataFrame(test.drop(columns=['species']).to_numpy(), columns=iris_feature_names)
+# result["actual_class"] = test['species']
+# result["predicted_class"] = predictions
+
+# print(result[:4])
